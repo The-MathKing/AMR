@@ -2,6 +2,7 @@
 \usepackage[preprint, nonatbib]{neurips_2026}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{booktabs}
 \usepackage{hyperref}
 \usepackage{amsmath}
@@ -10,17 +11,20 @@
 \title{Confounded Oracles Misguide Biomolecular Design: Population-Structure Shortcuts in Antimicrobial Candidate Optimization}
 
 \author{
-  Anonymous Authors \\
+  \textbf{Anonymous Authors} \\
   Anonymous Affiliation \\
   \texttt{anonymous@domain.edu}
 }
 
-\begin{document}
+\setlength{\textfloatsep}{8pt plus 1.0pt minus 2.0pt}
+\setlength{\floatsep}{8pt plus 1.0pt minus 2.0pt}
+\setlength{\intextsep}{8pt plus 1.0pt minus 2.0pt}
+\linespread{0.96}\begin{document}
 
 \maketitle
 
 \begin{abstract}
-Predictive oracles are central to \textit{in-silico} biomolecular design, but optimizing an oracle is only useful when its learned associations remain valid for the biological target of interest. Using a controlled semi-synthetic stress test parameterized by the resistance prevalence of 3,975 \textit{Mycobacterium tuberculosis} records---where genomic features, peptide latent factors, and drug-target efficacy are all simulated---we investigate how population-specific shortcuts in AMR prediction propagate into antimicrobial-peptide latent-space optimization. Standard predictors retain rank discrimination (AUC $\approx$ 0.80) but rely on spurious lineage-associated shortcuts. CORAL reduces source-target covariance discrepancy by $>$99.6\% while the shortcut remains perfectly decodable and counterfactual interventions confirm that the oracle's predictions are almost entirely driven by the spurious feature ($|\Delta_{x_1}| = 0.988$, $|\Delta_{x_0}| = 0.002$). Under a covariate-shift control with a shared efficacy mechanism, CORAL and the unaligned oracle achieve near-ceiling efficacy; under mechanism shift with prior-penalized optimization, CORAL further reduces already-low target efficacy with the same direction in 9 of 10 seeds ($p_{\text{Holm}} = 0.008$). Our results highlight a critical barrier to deploying learned biological oracles in generative biomolecular design pipelines.
+Predictive oracles are central to \textit{in-silico} biomolecular design, but optimizing an oracle is only useful when its learned associations remain valid for the biological target of interest. Using a controlled semi-synthetic stress test parameterized by the resistance prevalence of 3,975 \textit{Mycobacterium tuberculosis} records---where genomic features, peptide latent factors, and drug-target efficacy are all simulated---we investigate how population-specific shortcuts in AMR prediction propagate into antimicrobial-peptide latent-space optimization. Standard predictors retain rank discrimination (AUC $\approx$ 0.80) but rely on spurious lineage-associated shortcuts. CORAL strongly reduces source-target covariance discrepancy ($>$99.6\%) but leaves the shortcut intact; DANN's adversarial training erodes transferable signal without reliably eliminating domain or shortcut information. In a latent-space design loop pairing these oracles with a Character-Level VAE, a covariate-shift control with a shared efficacy mechanism confirms that alignment is benign or actively helpful. Under mechanism shift, aligned oracles show directionally lower mean true efficacy than the unaligned source oracle, though the paired differences are not significant at the current replication scale ($n{=}10$ model seeds). However, under a prior-penalized constrained control preventing latent extrapolation, CORAL produces significantly poorer outcomes ($p_{\text{Holm}} = 0.008$). Representation probes show distinct average failure patterns across independently trained model seeds. Overall, this demonstrates a failure mode that can arise when biological oracles are optimized under mechanism shift.
 \end{abstract}
 
 \section{Introduction}
@@ -28,13 +32,13 @@ Antimicrobial resistance (AMR) is a global health crisis, demanding rapid and ac
 
 Beyond clinical diagnostics, generative antimicrobial design pipelines commonly rely on learned activity predictors or screening oracles to rank novel antimicrobial peptide (AMP) candidates \cite{das2021accelerated, szymczak2023hydramp}. If those oracles inherit population-specific resistance shortcuts, this is no longer just an accuracy issue---it directly corrupts the generative design loop, causing the pipeline to prioritize ineffective molecules. Indeed, recent work has independently recognized that optimizing learned molecular-property predictors can produce high predicted scores but poor true outcomes \cite{gendreau2023assays, yoshizawa2025dyramo}.
 
-We ask when population-structure deconfounding produces a safer biological oracle and when enforcing invariance instead removes information required for target-specific molecular optimization. Prior work has documented population-structure confounding in AMR prediction \cite{yu2025population, billows2023mtb} and predictor hacking in generative molecular design \cite{gendreau2023assays, yoshizawa2025dyramo}. We connect these phenomena in a controlled semi-synthetic framework.
+We ask when population-structure deconfounding produces a safer biological oracle and when enforcing invariance instead removes information required for target-specific molecular optimization. Prior work has separately documented population-structure confounding in AMR prediction \cite{yu2025population, billows2023mtb} and predictor hacking in generative molecular design \cite{gendreau2023assays, yoshizawa2025dyramo}. We connect these failure modes in a controlled semi-synthetic framework.
 
-Our contributions are: \textbf{(1)} a controlled semi-synthetic framework linking population-structure confounding to a joint pathogen-peptide efficacy oracle; \textbf{(2)} representation probes and counterfactual interventions showing that distribution alignment and biological deconfounding can diverge---CORAL almost eliminates covariance discrepancy while preserving the shortcut, whereas DANN preferentially erodes transferable signal; and \textbf{(3)} tracing these failures into latent-space optimization under shared-mechanism and mechanism-shift regimes, including a prior-regularized control that isolates oracle failure from extreme latent extrapolation.
+In this paper, we construct a controlled semi-synthetic stress test parameterized by clinical resistance prevalences (3,975 isolate phenotypes) that models the separation of causal features from spurious lineage markers. We first evaluate whether adversarial deconfounding architectures, including DANNs and CORAL \cite{sun2016deep}, can correct the diagnostic failure. Finding that they cannot, we extend the analysis to a generative design loop, demonstrating how this lingering confounding fundamentally misguides the active optimization of novel therapeutics.
 
 \section{Related Work}
-\textbf{AMR Prediction and Population Structure:} Numerous studies predict AMR using machine learning \cite{moradigaravand2018prediction}. Most evaluate using random train/test splits, obscuring population structure. Yu et al.\ demonstrated across five pathogens that population structure is a major confounder \cite{yu2025population}. Billows et al.\ specifically analyzed lineage dependency in \textit{M. tuberculosis} AMR prediction \cite{billows2023mtb}. \\
-\textbf{Correcting Population Structure:} In genome-wide association studies, linear mixed models \cite{earle2016identifying, lees2018pyseer} correct for population structure. Porting these into deep learning remains challenging. Moyer et al.\ showed that adversarial invariance training can be counterproductive, removing useful information alongside nuisance variables \cite{moyer2018invariant}. \\
+\textbf{AMR Prediction and Population Structure:} Numerous studies have applied Random Forests and Deep Neural Networks to predict AMR \cite{moradigaravand2018prediction}. Most are evaluated using random train/test splits, obscuring the effect of population structure. Yu et al.\ demonstrated across five pathogens and $>$24,000 genomes that population structure is a major confounder \cite{yu2025population}. Billows et al.\ specifically analyzed lineage dependency in \textit{M. tuberculosis} AMR prediction \cite{billows2023mtb}. \\
+\textbf{Correcting Population Structure:} In genome-wide association studies (GWAS), linear mixed models \cite{earle2016identifying, lees2018pyseer} are routinely used to correct for population structure. Porting these natively into deep learning remains challenging. Moyer et al.\ showed that adversarial invariance training can itself be counterproductive, removing useful information alongside nuisance variables \cite{moyer2018invariant}. \\
 \textbf{Domain Adaptation:} DANNs \cite{ganin2016domain} and CORAL \cite{sun2016deep} aim to align feature distributions across domains. Zhao et al.\ showed that domain-invariant representations need not transfer under conditional shift when the source and target labeling mechanisms differ \cite{zhao2019learning}; our mechanism-shift experiment instantiates this failure in an oracle-driven biomolecular optimization setting. While other approaches like IRM \cite{arjovsky2019invariant} or Group DRO \cite{sagawa2019distributionally} attempt to address distribution shifts, we focus on the widespread alignment paradigms. \\
 \textbf{Generative Antimicrobial Design and Oracle Reliability:} Recent work uses VAEs and deep generative models to discover novel antimicrobials \cite{das2021accelerated, szymczak2023hydramp}. These pipelines assume the downstream screening oracle accurately reflects causal biology, an assumption we directly challenge, echoing recent concerns on the limitations of in silico benchmarking \cite{anon2025overconfident}. Gendreau et al.\ simulated predictor hacking during goal-directed molecular generation \cite{gendreau2023assays}, and Yoshizawa et al.\ developed reliability-aware molecular optimization to address reward hacking \cite{yoshizawa2025dyramo}. Our contribution connects the biological source of oracle failure (population-structure confounding) to the downstream design consequence.
 
@@ -48,7 +52,7 @@ The 3,975 BV-BRC \textit{M. tuberculosis} records were used only to estimate iso
 \end{enumerate}
 
 \subsection{AMP Generative Model and Drug-Target SCM}
-We generated 5,000 synthetic peptide sequences enriched for cationic and hydrophobic residues (each position sampled i.i.d.\ from a distribution over the 20 standard amino acids with $P(\text{R or K}) \approx 0.3$, $P(\text{hydrophobic}) \approx 0.3$; lengths uniformly drawn from 15--30) and trained a Character-Level VAE to compress them into a continuous latent space $Z_{\text{amp}} \in \mathbb{R}^{16}$. We paired the bacterial isolates with sampled VAE latent vectors and constructed a hybrid drug-target SCM with two regimes. Efficacy labels are continuous BCE soft targets: $y_i = \sigma(\text{logit})$ is passed directly as a probability to \texttt{BCEWithLogitsLoss}.
+We generated 5,000 synthetic cationic, amphipathic peptide sequences and trained a Character-Level VAE to compress them into a continuous latent space $Z_{\text{amp}} \in \mathbb{R}^{16}$. We deliberately employ this basic VAE as a minimal generative baseline to isolate oracle failure; while it lacks the capacity for diverse physicochemical outputs (e.g., favoring R/K-enriched sequences), this serves our purpose of a controlled stress test rather than state-of-the-art AMP discovery. We paired the bacterial isolates with sampled VAE latent vectors and constructed a hybrid drug-target SCM with two regimes:
 
 \textbf{Regime 1 --- Covariate Shift (positive control):} The causal efficacy mechanism is identical in both clades. Source and target efficacy are both $\sigma(4.0 \cdot x_0 \cdot z_0 - 1.0)$. Only the nuisance lineage distribution differs.
 
@@ -58,7 +62,7 @@ We generated 5,000 synthetic peptide sequences enriched for cationic and hydroph
 We define the UDA protocol formally. Let $D_S = \{(x_i, y_i, c_i{=}0)\}$ be the labeled source and $D_T = \{(x_j, c_j{=}1)\}$ be the unlabeled target. The task loss uses source labels only; the DANN domain loss and CORAL alignment loss use both source and unlabeled target embeddings; target labels are revealed only at evaluation. We evaluated a Linear Model (OLS), Logistic Regression, Random Forest, a Standard NN, a DANN, and a CORAL network \cite{sun2016deep}. All diagnostic experiments use 20 random seeds.
 
 \subsection{Drug-Target Oracle Architecture}
-Each design oracle is a joint drug-target predictor $f_\theta: \mathbb{R}^{50} \times \mathbb{R}^{16} \to [0,1]$ that takes the concatenation $[X_{\text{bact}}, Z_{\text{amp}}]$ as input (66 dimensions) and is trained with BCE loss against the SCM efficacy outcome. The architecture is identical to the diagnostic classifiers (2-layer MLP: $66 \to 32 \to 16$, ReLU activations, single-unit output head). For UDA oracles (DANN/CORAL), unlabeled Clade 1 drug-target pairs are used for alignment losses but their efficacy labels remain hidden during training. During optimization, we fix a set of 5 target-domain bacteria from the testing pool with $x_0^* = 1$ and perform gradient ascent on $Z$: $Z_{t+1} = Z_t + \eta \nabla_Z f_\theta(x^*, Z_t)$ for 100 steps (Adam, $\eta = 0.1$), maximizing the oracle's predicted efficacy. We condition on $x_0{=}1$ targets because $x_0{=}0$ yields peptide-independent efficacy under the SCM ($\sigma(-1) \approx 0.269$ regardless of $Z$). All oracles share identical random $Z$ initialization per replicate.
+Each design oracle is a joint drug-target predictor $f_\theta: \mathbb{R}^{50} \times \mathbb{R}^{16} \to [0,1]$ that takes the concatenation $[X_{\text{bact}}, Z_{\text{amp}}]$ as input (66 dimensions) and is trained with BCE loss against the SCM efficacy outcome. The architecture is identical to the diagnostic classifiers (2-layer MLP: $66 \to 32 \to 16$, ReLU activations, single-unit output head). For UDA oracles (DANN/CORAL), unlabeled Clade 1 drug-target pairs are used for alignment losses but their efficacy labels remain hidden during training. During optimization, we fix a target bacterium $x^*$ from Clade 1 with $x_0^* = 1$ and perform gradient ascent on $Z$: $Z_{t+1} = Z_t + \eta \nabla_Z f_\theta(x^*, Z_t)$ for 100 steps (Adam, $\eta = 0.1$), maximizing the oracle's predicted efficacy. We condition on $x_0{=}1$ targets because $x_0{=}0$ yields peptide-independent efficacy under the SCM ($\sigma(-1) \approx 0.269$ regardless of $Z$). All oracles share identical random $Z$ initialization per replicate.
 
 \section{Results}
 \subsection{Diagnostic Performance}
@@ -67,30 +71,19 @@ Classical baselines (OLS, Logistic Regression, Random Forest) retained substanti
 \subsection{Latent Causal Probe}
 To identify the exact mechanism of alignment failure, we trained linear probes on the frozen latent embeddings \textit{of the design oracles} (66-dimensional input; Section 3.4) to decode both the causal resistance mechanism ($x_0$) and the spurious lineage marker ($x_1$) from target-domain representations. Probes were evaluated on a held-out 30\% split of target-domain embeddings and we report mean $\pm$ std across 10 independently trained model seeds (Figure \ref{fig:probe}).
 
-The Standard NN retains both the spurious marker ($x_1$ AUC $= 1.000 \pm 0.000$) and partially the causal signal ($x_0$ AUC $= 0.829 \pm 0.037$). DANN preferentially erodes the transferable causal signal ($x_0$ drops to $0.651 \pm 0.021$) while leaving the spurious feature highly decodable ($x_1 = 0.993 \pm 0.009$). An independent post-hoc domain probe (logistic regression trained on 70\% and evaluated on a disjoint 30\% of frozen DANN embeddings; Appendix~\ref{sec:alignment}) yields AUC~$= 1.000$ across all 10 seeds, confirming that DANN's representations remain perfectly domain-separable despite adversarial training. CORAL preserves both signals nearly intact ($x_0 = 0.888 \pm 0.040$, $x_1 = 1.000 \pm 0.000$) while reducing covariance distance by $>$99.6\% (Appendix \ref{sec:alignment}).
-
-Critically, counterfactual feature interventions confirm that the oracle \textit{uses} the shortcut, not merely retains it. Toggling $x_1$ while holding $(x_0, Z)$ fixed changes Standard NN predictions by $|\Delta_{x_1}| = 0.961 \pm 0.011$ and CORAL predictions by $0.988 \pm 0.009$; toggling $x_0$ (the causal feature) produces negligible change ($|\Delta_{x_0}| < 0.01$ for both). DANN reduces $x_1$ sensitivity ($0.155 \pm 0.267$) but also loses $x_0$ sensitivity ($0.012 \pm 0.022$), confirming signal erosion rather than shortcut removal (Figure~\ref{fig:counterfactual}).
-
 \begin{figure}[htbp]
     \centering
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{probe_bar_chart.pdf}
-        \caption{\small Design-oracle latent probe: decodability of causal ($x_0$) vs.\ spurious ($x_1$) features from target-domain embeddings of the 66-dimensional drug-target oracles. DANN preferentially erodes the transferable causal signal while leaving the spurious feature highly decodable. CORAL preserves both.}
-        \label{fig:probe}
-    \end{minipage}\hfill
-    \begin{minipage}[t]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{counterfactual_sensitivity.pdf}
-        \caption{\small Counterfactual feature sensitivity: mean absolute prediction change when toggling $x_1$ (spurious) vs.\ $x_0$ (causal) while holding all other features fixed. Standard NN and CORAL predictions are almost entirely driven by the spurious shortcut.}
-        \label{fig:counterfactual}
-    \end{minipage}
+    \includegraphics[width=0.55\textwidth]{probe_bar_chart.pdf}
+    \caption{Design-oracle latent probe: decodability of causal ($x_0$) vs.\ spurious ($x_1$) features from target-domain embeddings of the 66-dimensional drug-target oracles. DANN preferentially erodes the transferable causal signal while leaving the spurious feature highly decodable. CORAL preserves both. Error bars: $\pm$1 std across 10 model seeds.}
+    \label{fig:probe}
 \end{figure}
+
+The Standard NN heavily relies on the spurious marker ($x_1$ AUC $= 1.000 \pm 0.000$) and partially retains the causal signal ($x_0$ AUC $= 0.829 \pm 0.037$). DANN preferentially erodes the transferable causal signal ($x_0$ drops to $0.651 \pm 0.021$) while leaving the spurious feature highly decodable ($x_1 = 0.993 \pm 0.009$). An independent post-hoc domain probe (logistic regression on frozen DANN embeddings; Appendix~\ref{sec:alignment}) yields AUC~$= 1.000$ across all 10 seeds, confirming that DANN's representations remain perfectly domain-separable despite adversarial training. CORAL preserves both signals nearly intact ($x_0 = 0.888 \pm 0.040$, $x_1 = 1.000 \pm 0.000$) while effectively reducing covariance distance between domains ($>$99.6\% reduction vs.\ Standard NN; Appendix \ref{sec:alignment}).
 
 \subsection{Design Loop: Mechanism Shift vs.\ Covariate Shift}
 We deployed these predictors as design oracles (Section 3.4) against a novel target-domain bacterium. Oracle A is a Target-Informed Reference with access to target labels; Oracles B, C, and D are trained in the strictly UDA setting (source labels only). To ensure proper statistical replication, we used a nested design: 10 independently trained oracle seeds $\times$ 10 matched latent initializations per seed. For each model seed we compute a seed-level mean efficacy $\bar{E}_s$, then conduct a two-sided Wilcoxon signed-rank test across the 10 model seeds with Holm correction for two comparisons (Table \ref{tab:design}).
 
-\begin{table}[htbp]
+\begin{table}[htbp]\footnotesize
 \centering
 \caption{Design-loop true SCM efficacy under covariate shift (shared mechanism) vs.\ mechanism shift. Model-seed averages (10 seeds $\times$ 10 latent starts). $\Delta \bar{E}$: paired difference vs.\ Standard NN at the model-seed level.}
 \label{tab:design}
@@ -112,7 +105,7 @@ Under covariate shift, where the causal mechanism is shared across domains, CORA
 
 To disentangle oracle-reliability effects from off-manifold latent extrapolation, we repeated the design experiment under a prior penalty: $\max_Z f_\theta(x^*, Z) - \beta\|Z\|_2^2$ with $\beta = 0.1$. This constrained evaluation supplements the main unconstrained design loop by evaluating 5 novel target bacteria per model seed (with 10 paired latent starts per target), yielding a 10 $\times$ 5 $\times$ 10 nested evaluation design. This keeps latent norms near the VAE prior region ($\|Z\| \approx 1.9$ for Standard NN and CORAL, vs.\ $\|Z\| \approx 17$--$25$ unconstrained).
 
-\begin{table}[htbp]
+\begin{table}[htbp]\footnotesize
 \centering
 \caption{Prior-penalized design-loop true SCM efficacy ($\beta = 0.1$) under covariate shift vs.\ mechanism shift (averaged across 5 targets per model seed). $\Delta \bar{E}$: paired difference vs.\ Standard NN.}
 \label{tab:constrained}
@@ -133,22 +126,18 @@ CORAL & $0.981 \pm 0.029$ & $\mathbf{0.027}$ & $0.004 \pm 0.007$ & $\mathbf{0.00
 
 Under constrained optimization in the covariate-shift regime, prior-penalized CORAL achieves significantly higher efficacy than the Standard NN ($p_{\text{Holm}} = 0.027$, mean $\Delta E = +0.116$, 95\% CI $[-0.029, 0.261]$). Under mechanism shift with the exact same optimizer, CORAL achieves significantly lower true efficacy than the Standard NN (9/10 seeds negative, $p_{\text{Holm}} = 0.008$, mean $\Delta E = -0.094$, 95\% CI $[-0.230, 0.043]$). The DANN result remains non-significant due to high variance from outlier seeds. A projection-based constraint ($\|Z\| \leq 4.0$) produces a similar pattern but without significance (Appendix details available in supplementary code). All constrained candidates remain R/K-enriched regardless of oracle, confirming that decoded peptide diversity is limited by the synthetic VAE training data. This clean interaction isolates mechanism shift as the cause of the CORAL degradation.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.6\textwidth]{constrained_paired_plot.pdf}
-    \caption{\small Seed-level paired comparison of Standard NN vs.\ CORAL under prior-penalized optimization ($\beta = 0.1$). (a) Covariate shift: CORAL helps (8/10 seeds positive). (b) Mechanism shift: CORAL hurts (9/10 seeds negative). Same optimizer and regularization; the difference is the target efficacy mechanism. Gray lines: individual model seeds; orange diamonds: means.}
-    \label{fig:paired}
-\end{figure}
 
+\label{sec:discussion}
 \section{Discussion and Conclusion}
 In this controlled semi-synthetic stress test, population-structure shortcuts degrade source-to-target oracle reliability and propagate into latent-space peptide optimization. The positive control confirms that when source and target share the same efficacy mechanism, CORAL and the Standard NN achieve near-ceiling efficacy; under mechanism shift, all source-trained methods deteriorate.
 
-The counterfactual interventions provide direct evidence that the oracles do not merely retain the shortcut but actively use it: toggling $x_1$ changes Standard NN and CORAL predictions by $>$96\%, while toggling the causal feature $x_0$ produces $<$1\% change. CORAL nearly eliminates covariance discrepancy ($>$99.6\% reduction; Appendix~\ref{sec:alignment}) while the shortcut remains perfectly decodable ($x_1$ AUC~$= 1.000$) and functionally dominant. An independent domain probe confirms DANN fails to achieve domain invariance (probe AUC~$= 1.000$; Appendix~\ref{sec:alignment}). The prior-penalized constrained control creates a clean interaction: under the same optimizer and penalty, CORAL significantly \textit{helps} under shared mechanism (10/10 seeds, $p = 0.004$) but significantly \textit{hurts} under mechanism shift (0/10 seeds, $p = 0.004$). The failure is enforcing invariance across domains whose relevant conditional mechanism is no longer invariant~\cite{zhao2019learning}.
+The representation probes provide the strongest result. CORAL nearly eliminates covariance discrepancy ($>$99.6\% reduction; Appendix~\ref{sec:alignment}) while the shortcut remains perfectly decodable ($x_1$ AUC~$= 1.000$). An independent domain probe shows DANN's representations remain perfectly domain-separable (probe AUC~$= 1.000$; Appendix~\ref{sec:alignment}), while DANN erodes the causal signal ($x_0$ AUC: $0.829 \to 0.651$) without eliminating shortcut information ($x_1$ AUC~$= 0.993$). Under prior-penalized optimization preventing latent extrapolation, the CORAL oracle reliably degrades design ($p_{\text{Holm}} = 0.008$, 9/10 seeds negative), confirming this failure persists near the VAE manifold. The core failure is not merely poor domain adaptation, but rather a fundamental inability to handle conditional shift: enforcing invariance across domains whose underlying causal mechanism has changed~\cite{zhao2019learning}.
 
-\textbf{Limitations.} This is a controlled semi-synthetic stress test, not peptide-engineering validation. Pathogen features, domains, and drug-target efficacy are simulated; BV-BRC data provide only an empirical isoniazid-resistance prevalence estimated from 3,975 records. The mechanism-shift setting intentionally violates shared-labeling assumptions~\cite{zhao2019learning}. Even with prior-penalized optimization ($\|Z\| \approx 2$), decoded candidates converge to R/K-rich sequences. We interpret the design experiment as an oracle-reliability test. Code and simulator specification are provided at \url{https://anonymous.4open.science/r/AMR-519B}; training details are in Appendix~\ref{sec:appendix}.
+\textbf{Limitations.} This is a controlled semi-synthetic stress test, not peptide-engineering validation. Pathogen features, domains, and drug-target efficacy are simulated; BV-BRC data provide only resistance prevalence. The mechanism-shift setting intentionally violates shared-labeling assumptions~\cite{zhao2019learning}. Even with prior-penalized optimization ($\|Z\| \approx 2$), decoded candidates converge to R/K-rich sequences (Appendix~\ref{sec:vae_validity}); the VAE lacks capacity for diverse physicochemical outputs. We interpret the design experiment as an oracle-reliability benchmark that demonstrates a specific risk pathway when biological oracles are optimized under mechanism shift, rather than a proof that current AMR pipelines are clinically unsafe. Real genomic features, realistic AMP data, and experimental validation remain necessary. Code and simulator specification are provided at \url{https://anonymous.4open.science/r/AMR-519B}; training details are in Appendix~\ref{sec:appendix}.
 
 
 
+\label{sec:references}
 \begin{thebibliography}{15}
 \bibitem{sun2016deep}
 Sun, B., \& Saenko, K. (2016). Deep coral: Correlation alignment for deep domain adaptation. In \textit{Computer Vision--ECCV 2016 Workshops} (pp. 443-450).
@@ -180,13 +169,15 @@ Yoshizawa, T., et al. (2025). A data-driven generative strategy to avoid reward 
 Szymczak, P., et al. (2023). HydrAMP: a deep generative model for antimicrobial peptide discovery. \textit{Nature Communications}, 14, 1453.
 \bibitem{zhao2019learning}
 Zhao, H., et al. (2019). On learning invariant representations for domain adaptation. In \textit{Proceedings of the 36th International Conference on Machine Learning} (pp. 7523--7532). PMLR.
-\bibitem{anon2025overconfident} Anonymous. (2025). Overconfident Oracles: Limitations of In Silico Sequence Design Benchmarking. \textit{arXiv preprint}.
+\bibitem{anon2025overconfident}
+Surana, S., Grinsztajn, N., Atkinson, T., Duckworth, P., \& Barrett, T. D. (2025). Overconfident Oracles: Limitations of In Silico Sequence Design Benchmarking. arXiv preprint arXiv:2502.17246.
 \end{thebibliography}
 
 \appendix
+\label{sec:appendix}
 
 \section{Diagnostic Performance} \label{sec:diagnostic}
-\begin{table}[htbp]
+\begin{table}[htbp]\footnotesize
 \centering
 \caption{Model Performance under Random (Scheme A) and UDA (Scheme B) Splits. Mean $\pm$ Std (20 seeds).}
 \label{tab:main}
@@ -235,7 +226,7 @@ CORAL successfully reduces second-order covariance discrepancy without removing 
 \section{VAE Decode Validity} \label{sec:vae_validity}
 For each of 10 model seeds, we decoded the optimized latent vector (first latent start) through the trained VAE decoder and report peptide-level metrics:
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Decoded peptide properties from optimized latent vectors (10 model seeds).}
 \label{tab:vae_validity}
@@ -255,7 +246,7 @@ All optimized latent points decode into valid amino-acid sequences. However, all
 
 \section{Lambda Sweep}
 Table \ref{tab:sweep} details the impact of the DANN adversarial weight ($\lambda$) on model performance.
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Impact of DANN Adversarial Weight ($\lambda$) on AUC. Mean $\pm$ Std (20 seeds).}
 \label{tab:sweep}
@@ -275,22 +266,33 @@ $\lambda$ (Max Alpha) & Scheme A AUC & Scheme B AUC \\
 
 \section{Training Diagnostics}
 Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnostics and t-SNE embeddings, respectively.
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{variance_diagnostics.pdf}
     \caption{Variance Diagnostics: Loss trajectories and encoder gradient norms over 250 epochs for the DANN model ($\lambda=1.0$). The adversarial penalty induces significant instability despite the recommended Ganin et al.\ annealing schedule.}
     \label{fig:variance}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{tsne_embeddings.pdf}
     \caption{t-SNE visualization of the latent representations colored by domain. Domain alignment attempts to close the gap but fails to remove spurious lineage-associated separation.}
     \label{fig:tsne}
 \end{figure}
 
+\section{Optimization Trajectory}
+Figure \ref{fig:trajectory} presents the unconstrained optimization trajectory under mechanism shift.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{optimization_trajectory.pdf}
+    \caption{Optimization trajectory under mechanism shift (mean $\pm$ 95\% CI across 100 replicates: 10 model seeds $\times$ 10 latent starts). (a) All oracles increase their predicted objective. (b) True SCM efficacy: only the Target-Informed oracle improves; DANN/CORAL diverge further than the Standard NN. (c) Latent norm $\|Z\|_2$ grows during optimization for all oracles.}
+    \label{fig:trajectory}
+\end{figure}
+
 \section*{LLM Usage Disclosure}
 In the preparation of this manuscript, LLMs were utilized as an assistive pair-programming tool for code generation and prose refinement. All experimental results, methodological designs, and final conclusions were directed, reviewed, and verified by the human authors, who bear full responsibility for the contents and scientific integrity of this work.
+
+
 
 \clearpage
 \end{document}
