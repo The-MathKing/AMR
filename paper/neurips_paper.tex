@@ -19,7 +19,8 @@
 \setlength{\textfloatsep}{8pt plus 1.0pt minus 2.0pt}
 \setlength{\floatsep}{8pt plus 1.0pt minus 2.0pt}
 \setlength{\intextsep}{8pt plus 1.0pt minus 2.0pt}
-\linespread{0.96}\begin{document}
+\linespread{0.96}\raggedbottom
+\begin{document}
 
 \maketitle
 
@@ -71,7 +72,7 @@ Classical baselines (OLS, Logistic Regression, Random Forest) retained substanti
 \subsection{Latent Causal Probe}
 To identify the exact mechanism of alignment failure, we trained linear probes on the frozen latent embeddings \textit{of the design oracles} (66-dimensional input; Section 3.4) to decode both the causal resistance mechanism ($x_0$) and the spurious population-associated shortcut ($x_1$) from target-domain representations. Probes were evaluated on a held-out 30\% split of target-domain embeddings and we report mean $\pm$ std across 10 independently trained model seeds (Figure \ref{fig:probe}).
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=0.55\textwidth]{probe_bar_chart.pdf}
     \caption{Design-oracle latent probe: decodability of causal ($x_0$) vs.\ spurious ($x_1$) features from target-domain embeddings of the 66-dimensional drug-target oracles. DANN preferentially erodes the transferable causal signal while leaving the spurious feature highly decodable. CORAL preserves both. Error bars: $\pm$1 std across 10 model seeds.}
@@ -83,7 +84,7 @@ A direct counterfactual intervention holding all other features fixed reveals th
 \subsection{Design Loop: Mechanism Shift vs.\ Covariate Shift}
 We deployed these predictors as design oracles (Section 3.4) against a novel target-domain bacterium. Oracle A is a Target-Informed Reference with access to target labels; Oracles B, C, and D are trained in the strictly UDA setting (source labels only). To ensure proper statistical replication, we used a nested design: 10 independently trained oracle seeds $\times$ 10 matched latent initializations per seed. For each model seed we compute a seed-level mean efficacy $\bar{E}_s$ (Table \ref{tab:design}).
 
-\begin{table}[htbp]\footnotesize
+\begin{table}[H]\footnotesize
 \centering
 \caption{Design-loop true SCM efficacy under covariate shift (shared mechanism) vs.\ mechanism shift. Model-seed averages (10 seeds $\times$ 10 latent starts). $\Delta \bar{E}$: paired difference vs.\ Standard NN at the model-seed level.}
 \label{tab:design}
@@ -103,7 +104,7 @@ Under covariate shift, where the causal mechanism is shared across domains, CORA
 
 To disentangle oracle-reliability effects from off-manifold latent extrapolation, we repeated the design experiment under a prior penalty: $\max_Z f_\theta(x^*, Z) - \beta\|Z\|_2^2$ with $\beta = 0.1$. This constrained evaluation supplements the main unconstrained design loop by evaluating 5 novel target bacteria per model seed (with 10 paired latent starts per target), yielding a 10 $\times$ 5 $\times$ 10 nested evaluation design. This keeps latent norms near the VAE prior region ($\|Z\| \approx 1.9$ for Standard NN and CORAL, vs.\ $\|Z\| \approx 17$--$25$ unconstrained). For this analysis, we computed a paired permutation test on the seed-level mean differences (Table \ref{tab:design2}).
 
-\begin{table}[htbp]\footnotesize
+\begin{table}[H]\footnotesize
 \centering
 \caption{Prior-penalized design-loop true SCM efficacy ($\beta = 0.1$) under covariate shift vs.\ mechanism shift (averaged across 5 targets per model seed). $\Delta \bar{E}$: paired difference vs.\ Standard NN (Holm-corrected for two comparisons per regime).}
 \label{tab:design2}
@@ -174,7 +175,7 @@ Surana, S., Grinsztajn, N., Atkinson, T., Duckworth, P., \& Barrett, T. D. (2025
 \label{sec:appendix}
 
 \section{Diagnostic Performance} \label{sec:diagnostic}
-\begin{table}[htbp]\footnotesize
+\begin{table}[H]\footnotesize
 \centering
 \caption{Model Performance under Random (Scheme A) and UDA (Scheme B) Splits. Mean $\pm$ Std (20 seeds).}
 \label{tab:main}
@@ -221,7 +222,7 @@ CORAL successfully reduces second-order covariance discrepancy without removing 
 \section{VAE Decode Validity} \label{sec:vae_validity}
 For each of 10 model seeds, we decoded the optimized latent vector (first latent start) through the trained VAE decoder and report peptide-level metrics:
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Decoded peptide properties from optimized latent vectors (10 model seeds).}
 \label{tab:vae_validity}
@@ -241,7 +242,7 @@ All optimized latent points decode into valid amino-acid sequences. However, all
 
 \section{Lambda Sweep}
 Table \ref{tab:sweep} details the impact of the DANN adversarial weight ($\lambda$) on model performance.
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
 \caption{Impact of DANN Adversarial Weight ($\lambda$) on AUC. Mean $\pm$ Std (20 seeds).}
 \label{tab:sweep}
@@ -261,14 +262,14 @@ $\lambda$ (Max Alpha) & Scheme A AUC & Scheme B AUC \\
 
 \section{Training Diagnostics}
 Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnostics and t-SNE embeddings, respectively.
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{variance_diagnostics.pdf}
     \caption{Variance Diagnostics: Loss trajectories and encoder gradient norms over 250 epochs for the DANN model ($\lambda=1.0$). The adversarial penalty induces significant instability despite the recommended Ganin et al.\ annealing schedule.}
     \label{fig:variance}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{tsne_embeddings.pdf}
     \caption{t-SNE visualization of the latent representations colored by domain. Domain alignment attempts to close the gap but fails to remove spurious lineage-associated separation.}
@@ -277,7 +278,7 @@ Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnos
 
 \section{Optimization Trajectory}
 Figure \ref{fig:trajectory} presents the unconstrained optimization trajectory under mechanism shift.
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{optimization_trajectory.pdf}
     \caption{Optimization trajectory under mechanism shift (mean $\pm$ 95\% CI across 100 replicates: 10 model seeds $\times$ 10 latent starts). (a) All oracles increase their predicted objective. (b) True SCM efficacy: only the Target-Informed oracle improves; DANN/CORAL diverge further than the Standard NN. (c) Latent norm $\|Z\|_2$ grows during optimization for all oracles.}
