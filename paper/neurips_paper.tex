@@ -221,7 +221,7 @@ CORAL successfully reduces second-order covariance discrepancy without removing 
 \section{VAE Decode Validity} \label{sec:vae_validity}
 For each of 10 model seeds, we decoded the optimized latent vector (first latent start) through the trained VAE decoder and report peptide-level metrics:
 
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Decoded peptide properties from optimized latent vectors (10 model seeds).}
 \label{tab:vae_validity}
@@ -241,7 +241,7 @@ All optimized latent points decode into valid amino-acid sequences. However, all
 
 \section{Lambda Sweep}
 Table \ref{tab:sweep} details the impact of the DANN adversarial weight ($\lambda$) on model performance.
-\begin{table}[H]
+\begin{table}[htbp]
 \centering
 \caption{Impact of DANN Adversarial Weight ($\lambda$) on AUC. Mean $\pm$ Std (20 seeds).}
 \label{tab:sweep}
@@ -261,14 +261,14 @@ $\lambda$ (Max Alpha) & Scheme A AUC & Scheme B AUC \\
 
 \section{Training Diagnostics}
 Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnostics and t-SNE embeddings, respectively.
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{variance_diagnostics.pdf}
     \caption{Variance Diagnostics: Loss trajectories and encoder gradient norms over 250 epochs for the DANN model ($\lambda=1.0$). The adversarial penalty induces significant instability despite the recommended Ganin et al.\ annealing schedule.}
     \label{fig:variance}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{tsne_embeddings.pdf}
     \caption{t-SNE visualization of the latent representations colored by domain. Domain alignment attempts to close the gap but fails to remove spurious lineage-associated separation.}
@@ -277,7 +277,7 @@ Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnos
 
 \section{Optimization Trajectory}
 Figure \ref{fig:trajectory} presents the unconstrained optimization trajectory under mechanism shift.
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=\textwidth]{optimization_trajectory.pdf}
     \caption{Optimization trajectory under mechanism shift (mean $\pm$ 95\% CI across 100 replicates: 10 model seeds $\times$ 10 latent starts). (a) All oracles increase their predicted objective. (b) True SCM efficacy: only the Target-Informed oracle improves; DANN/CORAL diverge further than the Standard NN. (c) Latent norm $\|Z\|_2$ grows during optimization for all oracles.}
