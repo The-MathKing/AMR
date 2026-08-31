@@ -207,16 +207,16 @@ For each sample $i$, with assigned domain $c_i \in \{0,1\}$:
 Peptide latent vectors $Z_{\text{amp}} \in \mathbb{R}^{16}$ are sampled i.i.d.\ from the standard normal prior; one vector is assigned per bacterial sample (3,975 pairs total).
 
 \section{Alignment Metrics} \label{sec:alignment}
-To confirm that alignment objectives are actually optimized, we report:
+To ensure that our alignment goals are being achieved, we provide:
 \begin{itemize}
     \item \textbf{DANN domain-classifier accuracy} (final epoch): $0.798 \pm 0.240$ across 10 model seeds.
-    \item \textbf{Independent DANN domain probe}: A logistic regression classifier trained post-hoc on frozen DANN encoder embeddings (evaluated on a held-out 30\% test split of embeddings, stratified by domain) to predict source vs.\ target domain achieves AUC $= 1.000 \pm 0.000$ across all 10 seeds. Despite adversarial training, the DANN representation remains perfectly domain-separable.
+    \item \textbf{Independent DANN domain probe}: A logistic regression classifier trained post-hoc on frozen DANN encoder embeddings (evaluated on a held-out 30\% test split of embeddings, stratified by domain) to predict source vs.\ target domain achieves AUC $= 1.000 \pm 0.000$ across all 10 seeds. The DANN representation remains perfectly domain-separable despite adversarial training.
     \item \textbf{CORAL covariance distance}: Standard NN $0.260 \pm 0.070$ vs.\ CORAL $0.0008 \pm 0.0004$ ($>$99.6\% reduction).
 \end{itemize}
-CORAL successfully reduces second-order covariance discrepancy without removing the shortcut. DANN's adversarial training does not reliably eliminate domain information; the clean interpretation is that DANN substantially damages causal-feature decodability while leaving domain and shortcut features fully recoverable.
+CORAL successfully reduces second-order covariance discrepancy without removing the shortcut. The clean interpretation is that DANN's adversarial training does not reliably remove domain information, leaving causal-feature decodability while also rendering the domain and shortcut features fully recoverable.
 
 \section{VAE Decode Validity} \label{sec:vae_validity}
-For each of 10 model seeds, we decoded the optimized latent vector (first latent start) through the trained VAE decoder and report peptide-level metrics:
+For each of 10 model seeds, we decoded the optimized latent vector (first latent start) through the trained VAE decoder and report peptide-level metrics.
 
 \begin{table}[H]
 \centering
@@ -234,10 +234,10 @@ CORAL & 10/10 & 10/10 & 30.0 & +30.0 & $-4.34$ \\
 \end{tabular}
 \end{table}
 
-All optimized latent points decode into valid amino-acid sequences. However, all decoded candidates are heavily R/K-enriched (charge $\approx +30$, hydrophobicity $\approx -4.3$), reflecting the cationic bias of the synthetic training set rather than meaningful oracle-driven sequence diversity. This confirms that the design-loop analysis should be interpreted as a latent-space oracle stress test rather than a peptide-chemistry result.
+All optimized latent points decode into valid amino-acid sequences. However, all decoded candidates are heavily R/K-enriched (charge $\approx +30$, hydrophobicity $\approx -4.3$), which reflects the cationic bias of the synthetic training set rather than meaningful oracle-driven sequence diversity. This confirms that the design-loop analysis should be interpreted as a latent-space oracle stress test rather than a peptide-chemistry result.
 
 \section{Lambda Sweep}
-Table \ref{tab:sweep} details the impact of the DANN adversarial weight ($\lambda$) on model performance.
+Table \ref{tab:sweep} shows how the value of the DANN adversarial weight ($\lambda$) affects the results.
 \begin{table}[H]
 \centering
 \caption{Impact of DANN Adversarial Weight ($\lambda$) on AUC. Mean $\pm$ Std (20 seeds).}
@@ -257,11 +257,10 @@ $\lambda$ (Max Alpha) & Scheme A AUC & Scheme B AUC \\
 \end{table}
 
 \section{Training Diagnostics}
-Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnostics and t-SNE embeddings, respectively.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{variance_diagnostics.pdf}
-    \caption{Variance Diagnostics: Loss trajectories and encoder gradient norms over 250 epochs for the DANN model ($\lambda=1.0$). The adversarial penalty induces significant instability despite the recommended Ganin et al.\ annealing schedule.}
+    \caption{Variance Diagnostics: Loss trajectories and encoder gradient norms over 250 epochs for the DANN model ($\lambda = 1.0$). Despite following the recommended Ganin et al.\ annealing schedule, the adversarial penalty introduces substantial instability.}
     \label{fig:variance}
 \end{figure}
 
@@ -273,7 +272,6 @@ Figure \ref{fig:variance} and Figure \ref{fig:tsne} present the variance diagnos
 \end{figure}
 
 \section{Optimization Trajectory}
-Figure \ref{fig:trajectory} presents the unconstrained optimization trajectory under mechanism shift.
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{optimization_trajectory.pdf}
@@ -282,7 +280,7 @@ Figure \ref{fig:trajectory} presents the unconstrained optimization trajectory u
 \end{figure}
 
 \section*{LLM Usage Disclosure}
-In the preparation of this manuscript, LLMs were utilized as an assistive pair-programming tool for code generation and prose refinement. All experimental results, methodological designs, and final conclusions were directed, reviewed, and verified by the human authors, who bear full responsibility for the contents and scientific integrity of this work.
+LLMs were used to aid in grammar corrections and style refinement while preparing this manuscript. All experimental results, methodological designs, and final conclusions were directed, reviewed, and verified by the human authors, who bear full responsibility for the contents and scientific integrity of this work.
 
 
 
