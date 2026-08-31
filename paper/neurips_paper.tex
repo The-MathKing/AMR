@@ -43,15 +43,15 @@ We construct a controlled semi-synthetic stress test parameterized by clinical r
 
 \section{Methodology}
 \subsection{Data Simulation Protocol}
-The 3,975 BV-BRC \textit{M. tuberculosis} records were used only to estimate isoniazid resistance prevalence. Synthetic examples were then assigned to two balanced population-structure domains (1,987 and 1,988 examples); these domains do not represent reconstructed biological \textit{M. tuberculosis} lineages. We constructed a 50-dimensional genomic feature matrix $X_{\text{bact}}$ according to probabilistic logic gates:
+The 3,975 BV-BRC \textit{M. tuberculosis} records were used to generate only the prevalence of isoniazid resistance. Two balanced population structure domains were assigned (1,987 and 1,988 examples each). These are not reconstructions of any real biological \textit{M. tuberculosis} lineages. We built a 50-dimensional genomic feature matrix $X_{\text{bact}}$ according to probabilistic logic gates:
 \begin{enumerate}
-    \item \textbf{Causal Mechanism ($x_0$):} $x_0 \sim \text{Bernoulli}(0.402)$. The resistance phenotype is conditionally generated as $P(y=1 | x_0=1) = 0.761$ and $P(y=1 | x_0=0) = 0.090$, yielding a marginal base rate of $\approx 0.359$.
+    \item \textbf{Causal Mechanism ($x_0$):} $x_0 \sim \text{Bernoulli}(0.402)$. The resistance phenotype is conditionally generated as $P(y=1 | x_0=1) = 0.761$ and $P(y=1 | x_0=0) = 0.090$, with a marginal base rate of $\approx 0.359$.
     \item \textbf{The Spurious Population-Associated Shortcut ($x_1$):} In Domain 0: $P(x_1{=}1|y{=}1)=0.99$, $P(x_1{=}1|y{=}0)=0.01$. In Domain 1: $x_1 \sim \text{Bernoulli}(0.1)$, independent of $y$.
     \item \textbf{Background ($x_{2..49}$):} Domain-specific features ($x_{2..9}$ in Domain 0, $x_{10..17}$ in Domain 1; $P=0.9$) and global noise ($x_{18..49}$; $P=0.1$). Full specification in Appendix \ref{sec:simulator}.
 \end{enumerate}
 
 \subsection{AMP Generative Model and Drug-Target SCM}
-We generated 5,000 synthetic peptide sequences enriched for cationic and hydrophobic residues and trained a Character-Level VAE to compress them into a continuous latent space $Z_{\text{amp}} \in \mathbb{R}^{16}$. We deliberately employ this basic VAE as a minimal generative baseline to isolate oracle failure; while it lacks the capacity for diverse physicochemical outputs (e.g., favoring R/K-enriched sequences), this serves our purpose of a controlled stress test rather than state-of-the-art AMP discovery. We paired the bacterial isolates with sampled VAE latent vectors and constructed a hybrid drug-target SCM with two regimes:
+We generated 5,000 synthetic peptide sequences enriched for cationic and hydrophobic residues and trained a Character-Level VAE to compress them into a continuous latent space $Z_{\text{amp}} \in \mathbb{R}^{16}$. We intentionally use this simple VAE as a baseline to stress test oracle failure in the simplest possible generative model. The VAE is not capable of generating different physicochemical properties (e.g., favoring R/K-enriched sequences) but serves our purpose of a simple stress test instead of state-of-the-art AMP discovery. We combine the bacterial isolates with sampled VAE latent vectors and define a hybrid drug-target SCM with two regimes:
 
 \textbf{Regime 1 --- Shared Mechanism (Covariate Shift):} Efficacy relies strictly on latent activity factor A ($z_0$). Source efficacy: $\sigma(4.0 \cdot x_0 \cdot z_0 - 1.0)$. Target efficacy: $\sigma(4.0 \cdot x_0 \cdot z_0 - 1.0)$.
 
